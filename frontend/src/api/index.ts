@@ -1,0 +1,12 @@
+export { default as request } from './request'
+export { authApi } from './auth'
+export { categoriesApi } from './categories'
+export { documentsApi } from './documents'
+export { filesApi } from './files'
+export { usersApi } from './users'
+
+export { authApi as auth } from './auth'
+export { categoriesApi as categoryApi } from './categories'
+export { documentsApi as documentApi } from './documents'
+export { filesApi as fileApi } from './files'
+export { usersApi as userApi } from './users'
