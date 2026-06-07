@@ -85,7 +85,7 @@ export const documentsApi = {
     const res = await request.get<
       unknown,
       ApiResponse<PaginationResult<DocumentFavorite>>
-    >('/documents/favorites', { params })
+    >('/documents/favorites/list', { params })
     return res.data
   },
 }

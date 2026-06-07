@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Button,
   Input,
@@ -13,7 +13,7 @@ import {
   Empty,
 } from 'antd'
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { documentApi, categoryApi } from '@/api'
 import type { Document, Category } from '@/types'
 import { DocumentCard } from '@/components'
@@ -24,6 +24,7 @@ const { Option } = Select
 
 const DocumentList = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [loading, setLoading] = useState(false)
   const [documents, setDocuments] = useState<Document[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -32,14 +33,6 @@ const DocumentList = () => {
   const [pageSize, setPageSize] = useState(12)
   const [keyword, setKeyword] = useState('')
   const [categoryId, setCategoryId] = useState<number | undefined>()
-
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  useEffect(() => {
-    fetchDocuments()
-  }, [page, pageSize, keyword, categoryId])
 
   const fetchCategories = async () => {
     try {
@@ -50,7 +43,7 @@ const DocumentList = () => {
     }
   }
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     try {
       setLoading(true)
       const result = await documentApi.getDocuments({
@@ -63,112 +56,20 @@ const DocumentList = () => {
       setTotal(result.total || 0)
     } catch (error) {
       console.error('Fetch documents error:', error)
-      setDocuments([
-        {
-          id: 1,
-          title: '前端开发规范手册',
-          content: '',
-          summary: '本文档介绍了前端开发的规范...',
-          categoryId: 1,
-          category: {
-            id: 1,
-            name: '技术文档',
-            code: 'tech',
-            sort: 1,
-            status: 'active',
-            createdAt: '2024-01-01',
-            updatedAt: '2024-01-01',
-          } as Category,
-          authorId: 1,
-          author: {
-            id: 1,
-            username: 'zhangsan',
-            email: 'zhangsan@example.com',
-            nickname: '张三',
-            role: 'user' as any,
-            status: 'active',
-            createdAt: '2024-01-01',
-            updatedAt: '2024-01-01',
-          },
-          status: 'published',
-          viewCount: 156,
-          isDeleted: false,
-          attachments: [],
-          createdAt: '2024-01-15',
-          updatedAt: '2024-01-15',
-        } as Document,
-        {
-          id: 2,
-          title: '产品需求文档模板',
-          content: '',
-          summary: '标准的产品需求文档模板...',
-          categoryId: 2,
-          category: {
-            id: 2,
-            name: '产品文档',
-            code: 'product',
-            sort: 2,
-            status: 'active',
-            createdAt: '2024-01-01',
-            updatedAt: '2024-01-01',
-          } as Category,
-          authorId: 2,
-          author: {
-            id: 2,
-            username: 'lisi',
-            email: 'lisi@example.com',
-            nickname: '李四',
-            role: 'user' as any,
-            status: 'active',
-            createdAt: '2024-01-01',
-            updatedAt: '2024-01-01',
-          },
-          status: 'published',
-          viewCount: 89,
-          isDeleted: false,
-          attachments: [],
-          createdAt: '2024-01-14',
-          updatedAt: '2024-01-14',
-        } as Document,
-        {
-          id: 3,
-          title: '新员工入职培训',
-          content: '',
-          summary: '新员工入职培训流程...',
-          categoryId: 3,
-          category: {
-            id: 3,
-            name: '培训资料',
-            code: 'training',
-            sort: 3,
-            status: 'active',
-            createdAt: '2024-01-01',
-            updatedAt: '2024-01-01',
-          } as Category,
-          authorId: 3,
-          author: {
-            id: 3,
-            username: 'wangwu',
-            email: 'wangwu@example.com',
-            nickname: '王五',
-            role: 'user' as any,
-            status: 'active',
-            createdAt: '2024-01-01',
-            updatedAt: '2024-01-01',
-          },
-          status: 'published',
-          viewCount: 234,
-          isDeleted: false,
-          attachments: [],
-          createdAt: '2024-01-13',
-          updatedAt: '2024-01-13',
-        } as Document,
-      ])
-      setTotal(3)
+      setDocuments([])
+      setTotal(0)
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, keyword, categoryId])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
+  useEffect(() => {
+    fetchDocuments()
+  }, [fetchDocuments, location.pathname])
 
   const handleFavoriteChange = (id: number, isFavorite: boolean) => {
     setDocuments((prev) =>
@@ -181,6 +82,25 @@ const DocumentList = () => {
   const handleDelete = (id: number) => {
     setDocuments((prev) => prev.filter((doc) => doc.id !== id))
     setTotal((prev) => prev - 1)
+  }
+
+  const handleSearch = (value: string) => {
+    setKeyword(value)
+    setPage(1)
+  }
+
+  const handleCategoryChange = (value: number | undefined) => {
+    setCategoryId(value)
+    setPage(1)
+  }
+
+  const handlePageChange = (p: number, size?: number) => {
+    if (size && size !== pageSize) {
+      setPageSize(size)
+      setPage(1)
+    } else {
+      setPage(p)
+    }
   }
 
   return (
@@ -205,20 +125,14 @@ const DocumentList = () => {
             enterButton={<SearchOutlined />}
             size="large"
             style={{ width: 300 }}
-            onSearch={(value) => {
-              setKeyword(value)
-              setPage(1)
-            }}
+            onSearch={handleSearch}
           />
           <Select
             placeholder="选择分类"
             allowClear
             size="large"
             style={{ width: 200 }}
-            onChange={(value) => {
-              setCategoryId(value)
-              setPage(1)
-            }}
+            onChange={handleCategoryChange}
           >
             {categories.map((cat) => (
               <Option key={cat.id} value={cat.id}>
@@ -254,13 +168,10 @@ const DocumentList = () => {
               current={page}
               pageSize={pageSize}
               total={total}
-              onChange={setPage}
-              onShowSizeChange={(_, size) => {
-                setPageSize(size)
-                setPage(1)
-              }}
+              onChange={handlePageChange}
+              onShowSizeChange={(_, size) => handlePageChange(page, size)}
               showSizeChanger
-              showTotal={(total) => `共 ${total} 条`}
+              showTotal={(t) => `共 ${t} 条`}
             />
           </div>
         </>

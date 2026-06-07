@@ -12,10 +12,10 @@ interface AuthGuardProps {
 const AuthGuard = ({ children, requiredRoles = [] }: AuthGuardProps) => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, token } = useAppStore()
+  const { user, token, isAuthenticated } = useAppStore()
 
   useEffect(() => {
-    if (!token || !user) {
+    if (!isAuthenticated || !token) {
       navigate('/login', {
         state: { from: location.pathname },
         replace: true,
@@ -23,15 +23,15 @@ const AuthGuard = ({ children, requiredRoles = [] }: AuthGuardProps) => {
       return
     }
 
-    if (requiredRoles.length > 0 && user) {
+    if (user && requiredRoles.length > 0) {
       const hasRequiredRole = requiredRoles.includes(user.role)
       if (!hasRequiredRole) {
         navigate('/forbidden', { replace: true })
       }
     }
-  }, [token, user, requiredRoles, navigate, location])
+  }, [token, user, isAuthenticated, requiredRoles, navigate, location])
 
-  if (!token || !user) {
+  if (!isAuthenticated || !token) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Spin size="large" />

@@ -96,12 +96,14 @@ const Favorites = () => {
   const handleRemoveFavorite = async (documentId: number, e: React.MouseEvent) => {
     e.stopPropagation()
     try {
-      await documentApi.toggleFavorite(documentId)
-      message.success('取消收藏成功')
-      setFavorites((prev) => prev.filter((f) => f.documentId !== documentId))
-      setTotal((prev) => prev - 1)
+      const result = await documentApi.toggleFavorite(documentId)
+      if (!result.isFavorite) {
+        message.success('取消收藏成功')
+        fetchFavorites()
+      }
     } catch (error) {
       console.error('取消收藏失败', error)
+      message.error('取消收藏失败，请重试')
     }
   }
 

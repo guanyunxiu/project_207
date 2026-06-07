@@ -29,7 +29,7 @@ export class DocumentsService {
     return await this.documentsRepository.save(document);
   }
 
-  async findAll(query: QueryDocumentDto) {
+  async findAll(query: QueryDocumentDto, userId?: number) {
     const { page, pageSize, keyword, categoryId, authorId, sortBy, sortOrder } = query;
     const skip = (page - 1) * pageSize;
 
@@ -63,8 +63,18 @@ export class DocumentsService {
       },
     });
 
+    let favoriteIds: number[] = [];
+    if (userId) {
+      favoriteIds = await this.getUserFavoriteDocumentIds(userId);
+    }
+
+    const itemsWithFavorite = items.map(item => ({
+      ...item,
+      isFavorite: favoriteIds.includes(item.id),
+    }));
+
     return {
-      items,
+      list: itemsWithFavorite,
       total,
       page,
       pageSize,
@@ -179,7 +189,7 @@ export class DocumentsService {
     });
 
     return {
-      items,
+      list: items,
       total,
       page,
       pageSize,
@@ -201,11 +211,11 @@ export class DocumentsService {
 
     if (existing) {
       await this.documentFavoritesRepository.delete(existing.id);
-      return { favorited: false, message: '已取消收藏' };
+      return { isFavorite: false, message: '已取消收藏' };
     } else {
       const favorite = this.documentFavoritesRepository.create({ documentId, userId });
       await this.documentFavoritesRepository.save(favorite);
-      return { favorited: true, message: '收藏成功' };
+      return { isFavorite: true, message: '收藏成功' };
     }
   }
 
@@ -236,7 +246,7 @@ export class DocumentsService {
     });
 
     return {
-      items,
+      list: items,
       total,
       page,
       pageSize,
@@ -282,10 +292,18 @@ export class DocumentsService {
       .getManyAndCount();
 
     return {
-      items,
+      list: items,
       total,
       page,
       pageSize,
     };
+  }
+
+  async getUserFavoriteDocumentIds(userId: number): Promise<number[]> {
+    const favorites = await this.documentFavoritesRepository.find({
+      where: { userId },
+      select: ['documentId'],
+    });
+    return favorites.map(f => f.documentId);
   }
 }

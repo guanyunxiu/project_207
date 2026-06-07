@@ -16,8 +16,11 @@ export class DocumentsController {
   @Public()
   @Get()
   @ApiOperation({ summary: '分页查询文档列表' })
-  async findAll(@Query() query: QueryDocumentDto) {
-    return this.documentsService.findAll(query);
+  async findAll(
+    @Query() query: QueryDocumentDto,
+    @CurrentUser() user?: User,
+  ) {
+    return this.documentsService.findAll(query, user?.id);
   }
 
   @Public()

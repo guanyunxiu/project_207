@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, Tag, Button, Avatar, Tooltip, Popconfirm, message } from 'antd'
 import {
   EyeOutlined,
@@ -36,6 +36,10 @@ const DocumentCard = ({
   const [favoriting, setFavoriting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [localIsFavorite, setLocalIsFavorite] = useState(isFavorite)
+
+  useEffect(() => {
+    setLocalIsFavorite(isFavorite)
+  }, [isFavorite])
 
   const isAuthor = user?.id === document.authorId
   const isSuperAdmin = user?.role === Role.SUPER_ADMIN
