@@ -191,13 +191,14 @@ export const assessmentsApi = {
   },
 
   downloadReportPDF: async (recordId: number): Promise<void> => {
-    const response = await request.get(
+    const result = await request.get(
       `/assessments/records/${recordId}/report/pdf`,
       {
         responseType: 'blob',
       }
     )
-    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const blob = result instanceof Blob ? result : new Blob([result as unknown as BlobPart])
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.setAttribute('download', `assessment-report-${recordId}.pdf`)

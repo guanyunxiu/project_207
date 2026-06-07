@@ -203,7 +203,7 @@ export class StatisticsService {
 
     const result = await qb
       .groupBy('u.department')
-      .orderBy('avgScore', 'DESC')
+      .orderBy('"avgScore"', 'DESC')
       .getRawMany();
 
     return result.map((item) => ({

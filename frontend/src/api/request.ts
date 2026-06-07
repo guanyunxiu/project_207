@@ -23,6 +23,9 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   (response) => {
     const res = response.data
+    if (res instanceof Blob) {
+      return res
+    }
     if (res.code !== 0 && res.code !== 200) {
       message.error(res.message || '请求失败')
       if (res.code === 401) {
