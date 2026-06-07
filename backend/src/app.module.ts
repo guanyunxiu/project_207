@@ -19,6 +19,8 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { FilesModule } from './modules/files/files.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AssessmentsModule } from './modules/assessments/assessments.module';
+import { StatisticsModule } from './modules/statistics/statistics.module';
+import { CounselingModule } from './modules/counseling/counseling.module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { AssessmentsModule } from './modules/assessments/assessments.module';
     FilesModule,
     NotificationsModule,
     AssessmentsModule,
+    StatisticsModule,
+    CounselingModule,
   ],
 })
 export class AppModule {}

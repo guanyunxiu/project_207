@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import * as PDFDocument from 'pdfkit';
 import { Question } from './entities/question.entity';
 import { QuestionOption } from './entities/question-option.entity';
 import { Scale } from './entities/scale.entity';
@@ -22,9 +23,11 @@ import {
   SubmitAssessmentDto,
   QueryAssessmentRecordDto,
 } from './dto';
-import { Status, QuestionType, ScaleType } from '@/common/enums/status.enum';
+import { Status, QuestionType, ScaleType, ResultLevel, NotificationType } from '@/common/enums/status.enum';
 import { Role } from '@/common/enums/role.enum';
 import { PaginationResult } from '@/common/dto/response.dto';
+import { NotificationsService } from '@/modules/notifications/notifications.service';
+import { anonymizeUser } from '@/common/utils/privacy.utils';
 
 @Injectable()
 export class AssessmentsService {
@@ -45,6 +48,7 @@ export class AssessmentsService {
     private assessmentAnswerRepository: Repository<AssessmentAnswer>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createQuestion(createQuestionDto: CreateQuestionDto): Promise<Question> {
@@ -503,47 +507,109 @@ export class AssessmentsService {
 
     await this.assessmentAnswerRepository.save(answers);
 
+    const resultLevel = this.determineResultLevel(totalScore, scale.scaleQuestions.length);
+
     record.totalScore = totalScore;
     record.status = Status.COMPLETED;
     record.submittedAt = new Date();
-    record.resultDescription = this.generateResultDescription(scale.type, totalScore, scale.scaleQuestions.length);
+    record.resultLevel = resultLevel;
+    record.resultDescription = this.generateResultDescription(scale.type, totalScore, scale.scaleQuestions.length, resultLevel);
 
-    return this.assessmentRecordRepository.save(record);
+    const savedRecord = await this.assessmentRecordRepository.save(record);
+
+    if (resultLevel === ResultLevel.SEVERE || resultLevel === ResultLevel.MODERATE) {
+      await this.sendHighRiskNotification(savedRecord, resultLevel);
+    }
+
+    return savedRecord;
   }
 
-  private generateResultDescription(scaleType: ScaleType, totalScore: number, questionCount: number): string {
+  determineResultLevel(totalScore: number, questionCount: number): ResultLevel {
     const maxScore = questionCount * 4;
     const percentage = (totalScore / maxScore) * 100;
 
-    const descriptions: Record<ScaleType, (pct: number) => string> = {
-      [ScaleType.ANXIETY]: (pct) => {
-        if (pct < 30) return '焦虑水平较低，心态较为平和。';
-        if (pct < 60) return '存在轻度焦虑，建议适当放松。';
-        if (pct < 80) return '中度焦虑，建议寻求专业心理咨询。';
+    if (percentage < 30) return ResultLevel.NORMAL;
+    if (percentage < 60) return ResultLevel.MILD;
+    if (percentage < 80) return ResultLevel.MODERATE;
+    return ResultLevel.SEVERE;
+  }
+
+  private generateResultDescription(
+    scaleType: ScaleType,
+    totalScore: number,
+    questionCount: number,
+    resultLevel: ResultLevel,
+  ): string {
+    const maxScore = questionCount * 4;
+    const percentage = (totalScore / maxScore) * 100;
+    const levelNames: Record<ResultLevel, string> = {
+      [ResultLevel.NORMAL]: '正常',
+      [ResultLevel.MILD]: '轻度',
+      [ResultLevel.MODERATE]: '中度',
+      [ResultLevel.SEVERE]: '重度',
+    };
+
+    const descriptions: Record<ScaleType, (level: ResultLevel) => string> = {
+      [ScaleType.ANXIETY]: (level) => {
+        if (level === ResultLevel.NORMAL) return '焦虑水平较低，心态较为平和。';
+        if (level === ResultLevel.MILD) return '存在轻度焦虑，建议适当放松。';
+        if (level === ResultLevel.MODERATE) return '中度焦虑，建议寻求专业心理咨询。';
         return '重度焦虑，请尽快寻求专业帮助。';
       },
-      [ScaleType.STRESS]: (pct) => {
-        if (pct < 30) return '压力水平较低，状态良好。';
-        if (pct < 60) return '存在轻度压力，注意劳逸结合。';
-        if (pct < 80) return '中度压力，建议调整工作节奏。';
+      [ScaleType.STRESS]: (level) => {
+        if (level === ResultLevel.NORMAL) return '压力水平较低，状态良好。';
+        if (level === ResultLevel.MILD) return '存在轻度压力，注意劳逸结合。';
+        if (level === ResultLevel.MODERATE) return '中度压力，建议调整工作节奏。';
         return '高压状态，请及时减压并寻求支持。';
       },
-      [ScaleType.SLEEP]: (pct) => {
-        if (pct < 30) return '睡眠质量良好，作息规律。';
-        if (pct < 60) return '存在轻度睡眠问题，建议调整作息。';
-        if (pct < 80) return '中度睡眠问题，建议就医咨询。';
+      [ScaleType.SLEEP]: (level) => {
+        if (level === ResultLevel.NORMAL) return '睡眠质量良好，作息规律。';
+        if (level === ResultLevel.MILD) return '存在轻度睡眠问题，建议调整作息。';
+        if (level === ResultLevel.MODERATE) return '中度睡眠问题，建议就医咨询。';
         return '严重睡眠问题，请尽快就医。';
       },
-      [ScaleType.EMOTION]: (pct) => {
-        if (pct < 30) return '情绪稳定，心理健康状态良好。';
-        if (pct < 60) return '存在轻度情绪波动，建议自我调节。';
-        if (pct < 80) return '中度情绪问题，建议寻求心理咨询。';
+      [ScaleType.EMOTION]: (level) => {
+        if (level === ResultLevel.NORMAL) return '情绪稳定，心理健康状态良好。';
+        if (level === ResultLevel.MILD) return '存在轻度情绪波动，建议自我调节。';
+        if (level === ResultLevel.MODERATE) return '中度情绪问题，建议寻求心理咨询。';
         return '情绪问题较严重，请尽快寻求专业帮助。';
       },
     };
 
     const descFn = descriptions[scaleType] || descriptions[ScaleType.ANXIETY];
-    return `总得分：${totalScore} / ${maxScore}。${descFn(percentage)}`;
+    return `总得分：${totalScore} / ${maxScore}。结果等级：${levelNames[resultLevel]}。${descFn(resultLevel)}`;
+  }
+
+  private async sendHighRiskNotification(record: AssessmentRecord, resultLevel: ResultLevel): Promise<void> {
+    const hrAdmins = await this.userRepository.find({
+      where: { role: In([Role.HR_ADMIN, Role.SUPER_ADMIN]), status: Status.ACTIVE },
+    });
+
+    const user = record.user || (await this.userRepository.findOne({ where: { id: record.userId } }));
+    const levelNames: Record<ResultLevel, string> = {
+      [ResultLevel.NORMAL]: '正常',
+      [ResultLevel.MILD]: '轻度',
+      [ResultLevel.MODERATE]: '中度',
+      [ResultLevel.SEVERE]: '重度',
+    };
+
+    for (const admin of hrAdmins) {
+      await this.notificationsService.sendNotification(
+        admin.id,
+        NotificationType.HIGH_RISK_WARNING,
+        '高风险员工预警',
+        `员工 ${user?.nickname || user?.username} (ID: ${record.userId}) 测评结果为${levelNames[resultLevel]}，需要关注。`,
+        {
+          data: {
+            recordId: record.id,
+            userId: record.userId,
+            resultLevel,
+            totalScore: record.totalScore,
+            userName: user?.nickname || user?.username,
+          },
+        },
+      );
+    }
   }
 
   async findAllRecords(query: QueryAssessmentRecordDto, currentUser: User): Promise<PaginationResult<AssessmentRecord>> {
@@ -612,5 +678,134 @@ export class AssessmentsService {
       .orderBy('t.createdAt', 'DESC');
 
     return qb.getMany();
+  }
+
+  async generateReportPDF(recordId: number, currentUser: User): Promise<Buffer> {
+    const record = await this.findOneRecord(recordId, currentUser);
+
+    if (record.status !== Status.COMPLETED) {
+      throw new BadRequestException('测评未完成，无法生成报告');
+    }
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const levelColors: Record<ResultLevel, string> = {
+        [ResultLevel.NORMAL]: '#52c41a',
+        [ResultLevel.MILD]: '#faad14',
+        [ResultLevel.MODERATE]: '#fa8c16',
+        [ResultLevel.SEVERE]: '#f5222d',
+      };
+
+      const levelNames: Record<ResultLevel, string> = {
+        [ResultLevel.NORMAL]: '正常',
+        [ResultLevel.MILD]: '轻度',
+        [ResultLevel.MODERATE]: '中度',
+        [ResultLevel.SEVERE]: '重度',
+      };
+
+      const scaleTypeNames: Record<ScaleType, string> = {
+        [ScaleType.ANXIETY]: '焦虑测评',
+        [ScaleType.STRESS]: '压力测评',
+        [ScaleType.SLEEP]: '睡眠测评',
+        [ScaleType.EMOTION]: '情绪测评',
+      };
+
+      doc.fontSize(24).text('心理健康测评报告', { align: 'center' });
+      doc.moveDown(0.5);
+      doc.fontSize(12).text(`报告编号: ${record.id}`, { align: 'center' });
+      doc.moveDown(2);
+
+      doc.fontSize(16).text('一、基本信息', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      const displayUser = currentUser.role === Role.EMPLOYEE ? record.user : anonymizeUser(record.user);
+      doc.text(`测评类型: ${scaleTypeNames[record.task?.scale?.type || ScaleType.ANXIETY]}`);
+      doc.text(`测评任务: ${record.task?.name || '-'}`);
+      doc.text(`用户: ${displayUser?.nickname || displayUser?.username || '-'}`);
+      doc.text(`部门: ${displayUser?.department || '-'}`);
+      doc.text(`提交时间: ${record.submittedAt ? new Date(record.submittedAt).toLocaleString('zh-CN') : '-'}`);
+      doc.moveDown(1);
+
+      doc.fontSize(16).text('二、测评结果', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`总分: ${record.totalScore} 分`);
+      doc.text(`结果等级: `);
+      if (record.resultLevel) {
+        doc.fillColor(levelColors[record.resultLevel]).text(levelNames[record.resultLevel], {
+          continued: false,
+        });
+        doc.fillColor('black');
+      }
+      doc.moveDown(0.5);
+      doc.text(`结果说明: ${record.resultDescription || '-'}`);
+      doc.moveDown(1);
+
+      if (record.resultLevel) {
+        const maxScore = (record.task?.scale?.scaleQuestions?.length || 0) * 4;
+        const percentage = maxScore > 0 ? Math.round((record.totalScore / maxScore) * 100) : 0;
+
+        doc.fontSize(16).text('三、得分分布', { underline: true });
+        doc.moveDown(0.5);
+
+        const barWidth = 400;
+        const barHeight = 30;
+        const barX = 50;
+        const barY = doc.y;
+
+        doc.rect(barX, barY, barWidth, barHeight).stroke();
+        doc.rect(barX, barY, (percentage / 100) * barWidth, barHeight)
+          .fill(levelColors[record.resultLevel]);
+
+        doc.fillColor('white').fontSize(12);
+        doc.text(`${percentage}%`, barX + 10, barY + 8);
+        doc.fillColor('black');
+
+        doc.moveDown(2);
+      }
+
+      doc.fontSize(16).text('四、建议', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+
+      if (record.resultLevel === ResultLevel.NORMAL) {
+        doc.text('• 继续保持良好的心态和生活习惯');
+        doc.text('• 定期进行自我觉察，关注情绪变化');
+        doc.text('• 保持适度的运动和规律的作息');
+      } else if (record.resultLevel === ResultLevel.MILD) {
+        doc.text('• 建议适当放松，学习减压技巧');
+        doc.text('• 保持规律作息，保证充足睡眠');
+        doc.text('• 多与家人朋友交流，分享感受');
+        doc.text('• 可考虑进行短期心理咨询');
+      } else if (record.resultLevel === ResultLevel.MODERATE) {
+        doc.text('• 建议寻求专业心理咨询师的帮助');
+        doc.text('• 与信任的人倾诉，不要独自承受');
+        doc.text('• 适当调整工作和生活节奏');
+        doc.text('• 定期进行心理测评，跟踪变化');
+      } else if (record.resultLevel === ResultLevel.SEVERE) {
+        doc.text('• 强烈建议尽快寻求专业心理医生的帮助');
+        doc.text('• 请告知家人或朋友，寻求支持');
+        doc.text('• 避免独处，保持与外界的联系');
+        doc.text('• 如有危机情况，请立即拨打心理援助热线');
+      }
+      doc.moveDown(1);
+
+      doc.fontSize(16).text('五、免责声明', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(10);
+      doc.text('本报告基于测评数据自动生成，仅供参考。如有需要，请咨询专业心理咨询师或医生。测评结果不构成任何医疗诊断或治疗建议。');
+      doc.moveDown(2);
+
+      doc.fontSize(10).text(`报告生成时间: ${new Date().toLocaleString('zh-CN')}`, { align: 'right' });
+      doc.text(`系统生成，请勿篡改`, { align: 'right' });
+
+      doc.end();
+    });
   }
 }

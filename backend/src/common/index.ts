@@ -9,3 +9,4 @@ export * from './dto/pagination.dto';
 export * from './dto/response.dto';
 export * from './enums/role.enum';
 export * from './enums/status.enum';
+export * from './utils/privacy.utils';

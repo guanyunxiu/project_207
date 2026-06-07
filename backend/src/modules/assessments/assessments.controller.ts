@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query, Response, Header } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Response as ExpressResponse } from 'express';
 import { AssessmentsService } from './assessments.service';
 import {
   CreateQuestionDto,
@@ -172,5 +173,18 @@ export class AssessmentsController {
   @ApiOperation({ summary: '获取我的待完成测评（所有登录用户）' })
   async getMyPendingTasks(@CurrentUser() user: User) {
     return this.assessmentsService.getMyPendingTasks(user.id);
+  }
+
+  @Get('records/:id/report/pdf')
+  @Header('Content-Type', 'application/pdf')
+  @ApiOperation({ summary: '导出测评报告PDF（所有登录用户）' })
+  async generateReportPDF(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Response() res: ExpressResponse,
+  ) {
+    const pdfBuffer = await this.assessmentsService.generateReportPDF(parseInt(id, 10), user);
+    res.setHeader('Content-Disposition', `attachment; filename="assessment-report-${id}.pdf"`);
+    res.send(pdfBuffer);
   }
 }

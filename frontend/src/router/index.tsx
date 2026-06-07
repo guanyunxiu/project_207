@@ -34,8 +34,10 @@ const DocumentManagement = lazy(() => import('@/pages/admin/Documents'))
 const QuestionManagement = lazy(() => import('@/pages/admin/Questions'))
 const ScaleManagement = lazy(() => import('@/pages/admin/Scales'))
 const AssessmentTaskManagement = lazy(() => import('@/pages/admin/AssessmentTasks'))
+const StatisticsDashboard = lazy(() => import('@/pages/admin/Statistics'))
 const MyAssessments = lazy(() => import('@/pages/Assessments'))
 const AssessmentRecordDetail = lazy(() => import('@/pages/Assessments/RecordDetail'))
+const Counseling = lazy(() => import('@/pages/Counseling'))
 
 const withSuspense = (element: React.ReactNode) => (
   <Suspense fallback={<LoadingFallback />}>{element}</Suspense>
@@ -126,6 +128,10 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    path: '/counseling',
+    element: protectedRoute(<Counseling />),
+  },
+  {
     path: '/admin',
     children: [
       {
@@ -155,6 +161,10 @@ export const router = createBrowserRouter([
       {
         path: 'assessment-tasks',
         element: protectedRoute(<AssessmentTaskManagement />, [Role.SUPER_ADMIN, Role.ASSESSMENT_ADMIN, Role.HR_ADMIN]),
+      },
+      {
+        path: 'statistics',
+        element: protectedRoute(<StatisticsDashboard />, [Role.SUPER_ADMIN, Role.HR_ADMIN, Role.ASSESSMENT_ADMIN]),
       },
     ],
   },

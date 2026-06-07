@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Card,
@@ -16,12 +17,15 @@ import {
 import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
+import { message } from 'antd'
 import { assessmentsApi } from '@/api'
 import {
   Status,
   ScaleType,
   QuestionType,
+  ResultLevel,
   type AssessmentRecord as AssessmentRecordType,
   type QuestionOption,
   type AssessmentAnswer,
@@ -74,9 +78,24 @@ const StatusColor: Record<Status, string> = {
   [Status.EXPIRED]: 'red',
 }
 
+const ResultLevelText: Record<ResultLevel, string> = {
+  [ResultLevel.NORMAL]: '正常',
+  [ResultLevel.MILD]: '轻度',
+  [ResultLevel.MODERATE]: '中度',
+  [ResultLevel.SEVERE]: '重度',
+}
+
+const ResultLevelColor: Record<ResultLevel, string> = {
+  [ResultLevel.NORMAL]: 'green',
+  [ResultLevel.MILD]: 'gold',
+  [ResultLevel.MODERATE]: 'orange',
+  [ResultLevel.SEVERE]: 'red',
+}
+
 const AssessmentRecordDetail = () => {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const [downloading, setDownloading] = useState(false)
 
   const { data: record, loading } = useRequest<AssessmentRecordType>(
     () => assessmentsApi.getRecord(parseInt(id || '0', 10)),
@@ -85,6 +104,20 @@ const AssessmentRecordDetail = () => {
       ready: !!id,
     }
   )
+
+  const handleDownloadPDF = async () => {
+    if (!record) return
+    setDownloading(true)
+    try {
+      await assessmentsApi.downloadReportPDF(record.id)
+      message.success('测评报告下载成功')
+    } catch (error) {
+      console.error('下载测评报告失败', error)
+      message.error('下载测评报告失败，请稍后重试')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const getAnswerByQuestionId = (
     questionId: number,
@@ -133,6 +166,18 @@ const AssessmentRecordDetail = () => {
             <span className="text-lg font-bold">测评结果详情</span>
           </Space>
         }
+        extra={
+          record?.status === Status.COMPLETED && (
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadPDF}
+              loading={downloading}
+            >
+              下载报告
+            </Button>
+          )
+        }
         loading={loading}
       >
         {record && (
@@ -179,12 +224,29 @@ const AssessmentRecordDetail = () => {
               </Col>
               <Col span={6}>
                 <Card>
-                  <Statistic
-                    title="完成率"
-                    value={Math.round((record.totalScore / getMaxScore(record)) * 100)}
-                    suffix="%"
-                    valueStyle={{ color: '#722ed1' }}
-                  />
+                  {record.resultLevel ? (
+                    <Statistic
+                      title="结果等级"
+                      value={ResultLevelText[record.resultLevel]}
+                      valueStyle={{
+                        color:
+                          record.resultLevel === ResultLevel.NORMAL
+                            ? '#52c41a'
+                            : record.resultLevel === ResultLevel.MILD
+                            ? '#faad14'
+                            : record.resultLevel === ResultLevel.MODERATE
+                            ? '#fa8c16'
+                            : '#f5222d',
+                      }}
+                    />
+                  ) : (
+                    <Statistic
+                      title="完成率"
+                      value={Math.round((record.totalScore / getMaxScore(record)) * 100)}
+                      suffix="%"
+                      valueStyle={{ color: '#722ed1' }}
+                    />
+                  )}
                 </Card>
               </Col>
             </Row>
@@ -205,9 +267,16 @@ const AssessmentRecordDetail = () => {
                   {record.task?.scale?.name}
                 </Descriptions.Item>
                 <Descriptions.Item label="状态">
-                  <Tag color={StatusColor[record.status]}>
-                    {StatusText[record.status]}
-                  </Tag>
+                  <Space>
+                    <Tag color={StatusColor[record.status]}>
+                      {StatusText[record.status]}
+                    </Tag>
+                    {record.resultLevel && (
+                      <Tag color={ResultLevelColor[record.resultLevel]}>
+                        {ResultLevelText[record.resultLevel]}
+                      </Tag>
+                    )}
+                  </Space>
                 </Descriptions.Item>
                 <Descriptions.Item label="提交时间">
                   {record.submittedAt
@@ -230,12 +299,25 @@ const AssessmentRecordDetail = () => {
                   <Space>
                     <CheckCircleOutlined className="text-green-500" />
                     <span>测评结果</span>
+                    {record.resultLevel && (
+                      <Tag color={ResultLevelColor[record.resultLevel]}>
+                        {ResultLevelText[record.resultLevel]}
+                      </Tag>
+                    )}
                   </Space>
                 }
               >
                 <Alert
                   message={record.resultDescription}
-                  type="info"
+                  type={
+                    record.resultLevel === ResultLevel.SEVERE
+                      ? 'error'
+                      : record.resultLevel === ResultLevel.MODERATE
+                      ? 'warning'
+                      : record.resultLevel === ResultLevel.MILD
+                      ? 'warning'
+                      : 'success'
+                  }
                   showIcon
                 />
               </Card>

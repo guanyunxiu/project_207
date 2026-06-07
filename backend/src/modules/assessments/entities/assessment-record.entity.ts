@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { Status } from '@/common/enums/status.enum';
+import { Status, ResultLevel } from '@/common/enums/status.enum';
 import { AssessmentTask } from './assessment-task.entity';
 import { User } from '@/modules/users/entities/user.entity';
 import { AssessmentAnswer } from './assessment-answer.entity';
@@ -34,6 +34,10 @@ export class AssessmentRecord {
   @ApiProperty({ description: '结果说明' })
   @Column({ type: 'text', name: 'result_description', nullable: true })
   resultDescription?: string;
+
+  @ApiProperty({ description: '结果等级', enum: ResultLevel })
+  @Column({ type: 'enum', enum: ResultLevel, name: 'result_level', nullable: true })
+  resultLevel?: ResultLevel;
 
   @ApiProperty({ description: '状态', enum: Status })
   @Column({ type: 'enum', enum: Status, default: Status.IN_PROGRESS })

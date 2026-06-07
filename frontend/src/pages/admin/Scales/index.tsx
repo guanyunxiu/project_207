@@ -161,6 +161,10 @@ const ScaleManagement = () => {
   }
 
   const handleSubmit = async (values: ScaleForm) => {
+    if (targetKeys.length === 0) {
+      message.error('请至少选择一道题目')
+      return
+    }
     try {
       const submitData = {
         ...values,
@@ -272,6 +276,7 @@ const ScaleManagement = () => {
   ]
 
   const renderTransferItem = (item: Question) => ({
+    key: item.id,
     value: item.id,
     label: `[${item.type === 'single' ? '单选' : '多选'}] ${item.content.slice(0, 50)}${item.content.length > 50 ? '...' : ''}`,
   })
@@ -393,9 +398,10 @@ const ScaleManagement = () => {
           </Form.Item>
 
           <Form.Item
-            name="questionIds"
             label="选择题目（按顺序排列）"
-            rules={[{ required: true, message: '请至少选择一道题目' }]}
+            required
+            validateStatus={targetKeys.length === 0 ? 'error' : ''}
+            help={targetKeys.length === 0 ? '请至少选择一道题目' : ''}
           >
             <Transfer
               dataSource={questionsForSelect?.map(renderTransferItem) || []}

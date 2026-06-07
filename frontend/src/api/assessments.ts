@@ -189,4 +189,21 @@ export const assessmentsApi = {
     )
     return res.data
   },
+
+  downloadReportPDF: async (recordId: number): Promise<void> => {
+    const response = await request.get(
+      `/assessments/records/${recordId}/report/pdf`,
+      {
+        responseType: 'blob',
+      }
+    )
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `assessment-report-${recordId}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  },
 }

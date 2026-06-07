@@ -33,6 +33,8 @@ import {
   UnorderedListOutlined,
   SendOutlined,
   SmileOutlined,
+  BarChartOutlined,
+  CustomerServiceOutlined,
 } from '@ant-design/icons'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/store'
@@ -69,6 +71,12 @@ const getNotificationTypeText = (type: NotificationType) => {
       return '点赞'
     case NotificationType.REVIEW:
       return '审核'
+    case NotificationType.HIGH_RISK_WARNING:
+      return '风险预警'
+    case NotificationType.COUNSELING_REMINDER:
+      return '咨询提醒'
+    case NotificationType.ASSESSMENT_COMPLETED:
+      return '测评完成'
     default:
       return '系统'
   }
@@ -289,6 +297,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       icon: <SmileOutlined />,
       label: <Link to="/assessments">心理测评</Link>,
     },
+    {
+      key: '/counseling',
+      icon: <CustomerServiceOutlined />,
+      label: <Link to="/counseling">心理咨询</Link>,
+    },
     ...(isAdmin
       ? [
           {
@@ -337,6 +350,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 key: '/admin/assessment-tasks',
                 icon: <SendOutlined />,
                 label: <Link to="/admin/assessment-tasks">任务发放</Link>,
+              },
+              {
+                key: '/admin/statistics',
+                icon: <BarChartOutlined />,
+                label: <Link to="/admin/statistics">数据统计</Link>,
               },
             ],
           },

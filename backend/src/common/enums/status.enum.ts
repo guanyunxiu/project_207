@@ -36,4 +36,22 @@ export enum NotificationType {
   LIKE = 'like',
   REVIEW = 'review',
   SYSTEM = 'system',
+  HIGH_RISK_WARNING = 'high_risk_warning',
+  COUNSELING_REMINDER = 'counseling_reminder',
+  ASSESSMENT_COMPLETED = 'assessment_completed',
+}
+
+export enum ResultLevel {
+  NORMAL = 'normal',
+  MILD = 'mild',
+  MODERATE = 'moderate',
+  SEVERE = 'severe',
+}
+
+export enum AppointmentStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  CANCELLED = 'cancelled',
+  COMPLETED = 'completed',
+  NO_SHOW = 'no_show',
 }

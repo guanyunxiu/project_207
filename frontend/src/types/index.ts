@@ -44,6 +44,24 @@ export enum NotificationType {
   LIKE = 'like',
   REVIEW = 'review',
   SYSTEM = 'system',
+  HIGH_RISK_WARNING = 'high_risk_warning',
+  COUNSELING_REMINDER = 'counseling_reminder',
+  ASSESSMENT_COMPLETED = 'assessment_completed',
+}
+
+export enum ResultLevel {
+  NORMAL = 'normal',
+  MILD = 'mild',
+  MODERATE = 'moderate',
+  SEVERE = 'severe',
+}
+
+export enum AppointmentStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  CANCELLED = 'cancelled',
+  COMPLETED = 'completed',
+  NO_SHOW = 'no_show',
 }
 
 export interface User {
@@ -422,12 +440,193 @@ export interface AssessmentRecord {
   user?: User
   totalScore: number
   resultDescription?: string
+  resultLevel?: ResultLevel
   status: Status
   startedAt?: string
   submittedAt?: string
   answers?: AssessmentAnswer[]
   createdAt: string
   updatedAt: string
+}
+
+export interface StressDistributionData {
+  level: string
+  count: number
+  percentage: number
+}
+
+export interface EmotionTrendData {
+  date: string
+  avgScore: number
+  participantCount: number
+}
+
+export interface DepartmentComparisonData {
+  department: string
+  avgScore: number
+  participantCount: number
+  severeCount: number
+  moderateCount: number
+}
+
+export interface OverallStatisticsData {
+  totalAssessments: number
+  totalParticipants: number
+  normalCount: number
+  mildCount: number
+  moderateCount: number
+  severeCount: number
+  avgScore: number
+  stressDistribution: StressDistributionData[]
+  emotionTrend: EmotionTrendData[]
+  departmentComparison: DepartmentComparisonData[]
+}
+
+export interface Counselor {
+  id: number
+  userId: number
+  user?: User
+  qualification?: string
+  specialties?: string
+  experienceYears: number
+  bio?: string
+  status: Status
+  isDeleted: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CounselingAppointment {
+  id: number
+  userId: number
+  user?: User
+  counselorId: number
+  counselor?: Counselor
+  appointmentDate: string
+  startTime: string
+  endTime: string
+  type?: string
+  consultationMethod?: string
+  problemDescription?: string
+  status: AppointmentStatus
+  cancelReason?: string
+  remarks?: string
+  record?: CounselingRecord
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CounselingRecord {
+  id: number
+  appointmentId: number
+  appointment?: CounselingAppointment
+  userId: number
+  user?: User
+  counselorId: number
+  counselor?: Counselor
+  sessionDate: string
+  durationMinutes: number
+  mainConcerns?: string
+  sessionSummary?: string
+  assessment?: string
+  interventionPlan?: string
+  followUp?: string
+  riskAssessment?: string
+  needsReferral: boolean
+  referralInfo?: string
+  isConfidential: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AvailableTimeSlot {
+  startTime: string
+  endTime: string
+  available: boolean
+}
+
+export interface CreateCounselorParams {
+  userId: number
+  qualification?: string
+  specialties?: string
+  experienceYears?: number
+  bio?: string
+  status?: Status
+}
+
+export interface UpdateCounselorParams {
+  qualification?: string
+  specialties?: string
+  experienceYears?: number
+  bio?: string
+  status?: Status
+}
+
+export interface CreateAppointmentParams {
+  counselorId: number
+  appointmentDate: string
+  startTime: string
+  endTime: string
+  type?: string
+  consultationMethod?: string
+  problemDescription?: string
+  remarks?: string
+}
+
+export interface UpdateAppointmentParams {
+  appointmentDate?: string
+  startTime?: string
+  endTime?: string
+  status?: AppointmentStatus
+  cancelReason?: string
+  remarks?: string
+}
+
+export interface CreateCounselingRecordParams {
+  appointmentId: number
+  sessionDate: string
+  durationMinutes?: number
+  mainConcerns?: string
+  sessionSummary?: string
+  assessment?: string
+  interventionPlan?: string
+  followUp?: string
+  riskAssessment?: string
+  needsReferral?: boolean
+  referralInfo?: string
+  isConfidential?: boolean
+}
+
+export interface UpdateCounselingRecordParams {
+  sessionDate?: string
+  durationMinutes?: number
+  mainConcerns?: string
+  sessionSummary?: string
+  assessment?: string
+  interventionPlan?: string
+  followUp?: string
+  riskAssessment?: string
+  needsReferral?: boolean
+  referralInfo?: string
+  isConfidential?: boolean
+}
+
+export interface QueryStatisticsParams {
+  scaleType?: ScaleType
+  startDate?: string
+  endDate?: string
+  department?: string
+}
+
+export interface QueryCounselingParams {
+  page?: number
+  pageSize?: number
+  counselorId?: number
+  userId?: number
+  status?: AppointmentStatus | Status
+  startDate?: string
+  endDate?: string
+  specialty?: string
 }
 
 export interface CreateQuestionParams {

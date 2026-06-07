@@ -10,6 +10,7 @@ import { AssessmentTask } from './entities/assessment-task.entity';
 import { AssessmentRecord } from './entities/assessment-record.entity';
 import { AssessmentAnswer } from './entities/assessment-answer.entity';
 import { User } from '@/modules/users/entities/user.entity';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { User } from '@/modules/users/entities/user.entity';
       AssessmentAnswer,
       User,
     ]),
+    NotificationsModule,
   ],
   controllers: [AssessmentsController],
   providers: [AssessmentsService],
