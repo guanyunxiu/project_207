@@ -1,5 +1,6 @@
 export enum Role {
   SUPER_ADMIN = 'super_admin',
+  ADMIN = 'super_admin',
   HR_ADMIN = 'hr_admin',
   ASSESSMENT_ADMIN = 'assessment_admin',
   EMPLOYEE = 'employee',
@@ -10,7 +11,23 @@ export enum Status {
   INACTIVE = 'inactive',
   DELETED = 'deleted',
   DRAFT = 'draft',
+  PENDING_REVIEW = 'pending_review',
   PUBLISHED = 'published',
+  REJECTED = 'rejected',
+}
+
+export enum DocumentPermission {
+  PUBLIC = 'public',
+  DEPARTMENT = 'department',
+  PRIVATE = 'private',
+}
+
+export enum NotificationType {
+  COMMENT = 'comment',
+  MENTION = 'mention',
+  LIKE = 'like',
+  REVIEW = 'review',
+  SYSTEM = 'system',
 }
 
 export interface User {
@@ -49,12 +66,74 @@ export interface Document {
   author?: User
   category?: Category
   status: Status
+  permission: DocumentPermission
   viewCount: number
+  likeCount: number
+  commentCount: number
+  version: number
+  reviewerId?: number
+  reviewer?: User
+  reviewComment?: string
+  reviewedAt?: string
   isDeleted: boolean
   attachments?: Array<{ name: string; url: string; size: number }>
   createdAt: string
   updatedAt: string
   isFavorite?: boolean
+  isLiked?: boolean
+}
+
+export interface DocumentComment {
+  id: number
+  documentId: number
+  authorId: number
+  author: User
+  parentId?: number
+  parentComment?: DocumentComment
+  replies?: DocumentComment[]
+  content: string
+  mentionedUserIds?: number[]
+  mentionedUsers?: User[]
+  likeCount: number
+  isDeleted: boolean
+  createdAt: string
+}
+
+export interface DocumentLike {
+  id: number
+  documentId: number
+  userId: number
+  user: User
+  createdAt: string
+}
+
+export interface DocumentVersion {
+  id: number
+  documentId: number
+  version: number
+  title: string
+  content: string
+  summary?: string
+  categoryId: number
+  userId: number
+  user: User
+  changeDescription?: string
+  createdAt: string
+}
+
+export interface Notification {
+  id: number
+  userId: number
+  senderId?: number
+  sender?: User
+  type: NotificationType
+  title: string
+  content?: string
+  documentId?: number
+  commentId?: number
+  isRead: boolean
+  data?: Record<string, any>
+  createdAt: string
 }
 
 export interface DocumentView {
@@ -71,6 +150,20 @@ export interface DocumentFavorite {
   userId: number
   createdAt: string
   document?: Document
+}
+
+export interface DocumentStats {
+  totalDocuments: number
+  publishedDocuments: number
+  pendingReviewDocuments: number
+  draftDocuments: number
+  totalViews: number
+  totalLikes: number
+  totalComments: number
+  hotDocuments: Document[]
+  publishTrend: Array<{ date: string; count: number }>
+  myDocuments?: number
+  favorites?: number
 }
 
 export interface LoginParams {
@@ -106,6 +199,8 @@ export interface CreateDocumentParams {
   summary?: string
   categoryId: number
   status?: Status
+  permission?: DocumentPermission
+  changeDescription?: string
   attachments?: any[]
 }
 
@@ -115,6 +210,8 @@ export interface UpdateDocumentParams {
   summary?: string
   categoryId?: number
   status?: Status
+  permission?: DocumentPermission
+  changeDescription?: string
   attachments?: any[]
 }
 
@@ -122,10 +219,28 @@ export interface QueryDocumentParams {
   keyword?: string
   categoryId?: number
   authorId?: number
+  status?: Status
   page?: number
   pageSize?: number
   sortBy?: 'createdAt' | 'viewCount'
   sortOrder?: 'ASC' | 'DESC'
+}
+
+export interface CreateCommentParams {
+  documentId: number
+  parentId?: number
+  content: string
+  mentionedUserIds?: number[]
+}
+
+export interface ReviewDocumentParams {
+  status: Status.PUBLISHED | Status.REJECTED
+  reviewComment?: string
+}
+
+export interface BatchManageParams {
+  ids: number[]
+  action: 'publish' | 'reject' | 'delete' | 'restore'
 }
 
 export interface CreateCategoryParams {

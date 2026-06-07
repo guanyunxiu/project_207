@@ -3,9 +3,16 @@ import type {
   Document,
   DocumentView,
   DocumentFavorite,
+  DocumentComment,
+  DocumentLike,
+  DocumentVersion,
+  DocumentStats,
   CreateDocumentParams,
   UpdateDocumentParams,
   QueryDocumentParams,
+  CreateCommentParams,
+  ReviewDocumentParams,
+  BatchManageParams,
   PaginationResult,
   PaginationParams,
   ApiResponse,
@@ -60,11 +67,141 @@ export const documentsApi = {
     return res.data
   },
 
+  submitForReview: async (id: number): Promise<{ message: string }> => {
+    const res = await request.post<unknown, ApiResponse<{ message: string }>>(
+      `/documents/${id}/submit-review`
+    )
+    return res.data
+  },
+
+  reviewDocument: async (
+    id: number,
+    params: ReviewDocumentParams
+  ): Promise<{ message: string }> => {
+    const res = await request.put<unknown, ApiResponse<{ message: string }>>(
+      `/documents/${id}/review`,
+      params
+    )
+    return res.data
+  },
+
+  getPendingReviews: async (
+    params?: PaginationParams
+  ): Promise<PaginationResult<Document>> => {
+    const res = await request.get<unknown, ApiResponse<PaginationResult<Document>>>(
+      '/documents/reviews/pending',
+      { params }
+    )
+    return res.data
+  },
+
+  createComment: async (
+    params: CreateCommentParams
+  ): Promise<DocumentComment> => {
+    const res = await request.post<unknown, ApiResponse<DocumentComment>>(
+      '/documents/comments',
+      params
+    )
+    return res.data
+  },
+
+  getComments: async (
+    documentId: number,
+    params?: PaginationParams
+  ): Promise<PaginationResult<DocumentComment>> => {
+    const res = await request.get<unknown, ApiResponse<PaginationResult<DocumentComment>>>(
+      `/documents/${documentId}/comments`,
+      { params }
+    )
+    return res.data
+  },
+
+  deleteComment: async (commentId: number): Promise<void> => {
+    await request.delete<unknown, ApiResponse>(`/documents/comments/${commentId}`)
+  },
+
+  toggleLike: async (
+    documentId: number
+  ): Promise<{ isLiked: boolean; likeCount: number; message: string }> => {
+    const res = await request.post<unknown, ApiResponse<{ isLiked: boolean; likeCount: number; message: string }>>(
+      `/documents/${documentId}/like`
+    )
+    return res.data
+  },
+
+  getLikes: async (
+    documentId: number,
+    params?: PaginationParams
+  ): Promise<PaginationResult<DocumentLike>> => {
+    const res = await request.get<unknown, ApiResponse<PaginationResult<DocumentLike>>>(
+      `/documents/${documentId}/likes`,
+      { params }
+    )
+    return res.data
+  },
+
+  getVersions: async (
+    documentId: number
+  ): Promise<PaginationResult<DocumentVersion>> => {
+    const res = await request.get<unknown, ApiResponse<PaginationResult<DocumentVersion>>>(
+      `/documents/${documentId}/versions`
+    )
+    return res.data
+  },
+
+  getVersion: async (
+    documentId: number,
+    versionId: number
+  ): Promise<DocumentVersion> => {
+    const res = await request.get<unknown, ApiResponse<DocumentVersion>>(
+      `/documents/${documentId}/versions/${versionId}`
+    )
+    return res.data
+  },
+
+  restoreVersion: async (
+    documentId: number,
+    versionId: number
+  ): Promise<{ message: string; version: number }> => {
+    const res = await request.post<unknown, ApiResponse<{ message: string; version: number }>>(
+      `/documents/${documentId}/versions/${versionId}/restore`
+    )
+    return res.data
+  },
+
+  exportDocument: async (
+    documentId: number,
+    format: 'markdown' | 'html'
+  ): Promise<{ content: string; filename: string }> => {
+    const res = await request.get<unknown, ApiResponse<{ content: string; filename: string }>>(
+      `/documents/${documentId}/export`,
+      { params: { format } }
+    )
+    return res.data
+  },
+
+  getStats: async (): Promise<DocumentStats> => {
+    const res = await request.get<unknown, ApiResponse<DocumentStats>>(
+      '/documents/stats/overview'
+    )
+    return res.data
+  },
+
+  batchManage: async (
+    params: BatchManageParams
+  ): Promise<{ message: string; count: number }> => {
+    const res = await request.post<unknown, ApiResponse<{ message: string; count: number }>>(
+      '/documents/batch/manage',
+      params
+    )
+    return res.data
+  },
+
   getViewHistory: async (
     params?: PaginationParams
   ): Promise<PaginationResult<DocumentView>> => {
     const res = await request.get<unknown, ApiResponse<PaginationResult<DocumentView>>>(
-      '/documents/view-history',
+      '/documents/history/view',
       { params }
     )
     return res.data
@@ -72,8 +209,8 @@ export const documentsApi = {
 
   toggleFavorite: async (
     documentId: number
-  ): Promise<{ isFavorite: boolean }> => {
-    const res = await request.post<unknown, ApiResponse<{ isFavorite: boolean }>>(
+  ): Promise<{ isFavorite: boolean; message: string }> => {
+    const res = await request.post<unknown, ApiResponse<{ isFavorite: boolean; message: string }>>(
       `/documents/${documentId}/favorite`
     )
     return res.data

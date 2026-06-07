@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsInt, Min, IsArray, IsEnum } from 'class-validator';
-import { Status } from '@/common/enums/status.enum';
+import { IsString, IsNotEmpty, IsOptional, IsInt, Min, IsArray, IsEnum, IsString as IsStr } from 'class-validator';
+import { Status, DocumentPermission } from '@/common/enums/status.enum';
 
 export class CreateDocumentDto {
   @ApiProperty({ description: '文档标题' })
@@ -28,6 +28,16 @@ export class CreateDocumentDto {
   @IsEnum(Status)
   @IsOptional()
   status?: Status;
+
+  @ApiPropertyOptional({ description: '文档权限', enum: DocumentPermission })
+  @IsEnum(DocumentPermission)
+  @IsOptional()
+  permission?: DocumentPermission;
+
+  @ApiPropertyOptional({ description: '变更描述' })
+  @IsStr()
+  @IsOptional()
+  changeDescription?: string;
 
   @ApiPropertyOptional({ description: '附件列表', type: [Object] })
   @IsArray()

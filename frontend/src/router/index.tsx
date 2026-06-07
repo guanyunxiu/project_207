@@ -25,8 +25,12 @@ const DocumentEdit = lazy(() => import('@/pages/Documents/Edit'))
 const Favorites = lazy(() => import('@/pages/Favorites'))
 const History = lazy(() => import('@/pages/History'))
 const Profile = lazy(() => import('@/pages/Profile'))
+const Notifications = lazy(() => import('@/pages/Notifications'))
+const DocumentVersions = lazy(() => import('@/pages/Documents/Versions'))
 const CategoryManagement = lazy(() => import('@/pages/admin/Categories'))
 const UserManagement = lazy(() => import('@/pages/admin/Users'))
+const DocumentReview = lazy(() => import('@/pages/admin/DocumentReview'))
+const DocumentManagement = lazy(() => import('@/pages/admin/Documents'))
 
 const withSuspense = (element: React.ReactNode) => (
   <Suspense fallback={<LoadingFallback />}>{element}</Suspense>
@@ -81,6 +85,10 @@ export const router = createBrowserRouter([
         path: ':id/edit',
         element: protectedRoute(<DocumentEdit />),
       },
+      {
+        path: ':id/versions',
+        element: protectedRoute(<DocumentVersions />),
+      },
     ],
   },
   {
@@ -90,6 +98,10 @@ export const router = createBrowserRouter([
   {
     path: '/history',
     element: protectedRoute(<History />),
+  },
+  {
+    path: '/notifications',
+    element: protectedRoute(<Notifications />),
   },
   {
     path: '/profile',
@@ -105,6 +117,14 @@ export const router = createBrowserRouter([
       {
         path: 'users',
         element: protectedRoute(<UserManagement />, [Role.SUPER_ADMIN]),
+      },
+      {
+        path: 'documents/review',
+        element: protectedRoute(<DocumentReview />, [Role.SUPER_ADMIN, Role.HR_ADMIN, Role.ASSESSMENT_ADMIN]),
+      },
+      {
+        path: 'documents',
+        element: protectedRoute(<DocumentManagement />, [Role.SUPER_ADMIN, Role.HR_ADMIN]),
       },
     ],
   },

@@ -17,6 +17,7 @@ import { UsersModule } from './modules/users/users.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { FilesModule } from './modules/files/files.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { FilesModule } from './modules/files/files.module';
     CategoriesModule,
     DocumentsModule,
     FilesModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

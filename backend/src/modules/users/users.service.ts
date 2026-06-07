@@ -67,6 +67,14 @@ export class UsersService {
     };
   }
 
+  async findAllUsers() {
+    return this.usersRepository.find({
+      where: { status: Status.ACTIVE },
+      select: ['id', 'username', 'nickname', 'avatar', 'department', 'position'],
+      order: { department: 'ASC', username: 'ASC' },
+    });
+  }
+
   async findOne(id: number) {
     const user = await this.usersRepository.findOne({
       where: { id },

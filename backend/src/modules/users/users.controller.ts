@@ -25,6 +25,12 @@ export class UsersController {
     return this.usersService.findAll(paginationDto);
   }
 
+  @Get('all')
+  @ApiOperation({ summary: '获取所有用户列表（用于@提及等场景）' })
+  async findAllUsers() {
+    return this.usersService.findAllUsers();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '获取单个用户（SUPER_ADMIN或本人）' })
   async findOne(@Param('id') id: string, @CurrentUser() currentUser: User) {

@@ -3,19 +3,24 @@ import type {
   User,
   CreateUserParams,
   UpdateUserParams,
+  QueryDocumentParams,
   ApiResponse,
   PaginationResult,
-  PaginationParams,
 } from '../types'
 
 export const usersApi = {
   getUsers: async (
-    params?: PaginationParams & { keyword?: string }
+    params?: QueryDocumentParams
   ): Promise<PaginationResult<User>> => {
     const res = await request.get<unknown, ApiResponse<PaginationResult<User>>>(
       '/users',
       { params }
     )
+    return res.data
+  },
+
+  getAllUsers: async (): Promise<User[]> => {
+    const res = await request.get<unknown, ApiResponse<User[]>>('/users/all')
     return res.data
   },
 
