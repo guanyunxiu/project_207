@@ -14,6 +14,22 @@ export enum Status {
   PENDING_REVIEW = 'pending_review',
   PUBLISHED = 'published',
   REJECTED = 'rejected',
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  EXPIRED = 'expired',
+}
+
+export enum QuestionType {
+  SINGLE = 'single',
+  MULTIPLE = 'multiple',
+}
+
+export enum ScaleType {
+  ANXIETY = 'anxiety',
+  STRESS = 'stress',
+  SLEEP = 'sleep',
+  EMOTION = 'emotion',
 }
 
 export enum DocumentPermission {
@@ -322,4 +338,151 @@ export interface CategoryStats {
 export interface UploadResponse {
   url: string
   filename: string
+}
+
+export interface QuestionOption {
+  id: number
+  questionId: number
+  label: string
+  content: string
+  score: number
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Question {
+  id: number
+  content: string
+  type: QuestionType
+  score: number
+  status: Status
+  isDeleted: boolean
+  options: QuestionOption[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ScaleQuestion {
+  id: number
+  scaleId: number
+  questionId: number
+  question: Question
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Scale {
+  id: number
+  name: string
+  type: ScaleType
+  description?: string
+  scoreDescription?: string
+  status: Status
+  isDeleted: boolean
+  scaleQuestions: ScaleQuestion[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AssessmentTask {
+  id: number
+  name: string
+  description?: string
+  scaleId: number
+  scale?: Scale
+  creatorId: number
+  creator?: User
+  targetUserIds?: number[]
+  targetDepartments?: string[]
+  startTime?: string
+  endTime?: string
+  status: Status
+  isDeleted: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AssessmentAnswer {
+  id: number
+  recordId: number
+  questionId: number
+  optionIds?: number[]
+  score: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AssessmentRecord {
+  id: number
+  taskId: number
+  task?: AssessmentTask
+  userId: number
+  user?: User
+  totalScore: number
+  resultDescription?: string
+  status: Status
+  startedAt?: string
+  submittedAt?: string
+  answers?: AssessmentAnswer[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateQuestionParams {
+  content: string
+  type: QuestionType
+  score?: number
+  options: Array<{
+    label: string
+    content: string
+    score?: number
+    sortOrder?: number
+  }>
+  status?: Status
+}
+
+export interface UpdateQuestionParams extends Partial<CreateQuestionParams> {}
+
+export interface CreateScaleParams {
+  name: string
+  type: ScaleType
+  description?: string
+  scoreDescription?: string
+  questionIds: number[]
+  status?: Status
+}
+
+export interface UpdateScaleParams extends Partial<CreateScaleParams> {}
+
+export interface CreateAssessmentTaskParams {
+  name: string
+  description?: string
+  scaleId: number
+  targetUserIds?: number[]
+  targetDepartments?: string[]
+  startTime?: string
+  endTime?: string
+}
+
+export interface UpdateAssessmentTaskParams extends Partial<CreateAssessmentTaskParams> {}
+
+export interface SubmitAssessmentParams {
+  recordId: number
+  answers: Array<{
+    questionId: number
+    optionIds: number[]
+  }>
+}
+
+export interface QueryAssessmentParams {
+  keyword?: string
+  type?: QuestionType | ScaleType
+  status?: Status
+  scaleId?: number
+  taskId?: number
+  userId?: number
+  page?: number
+  pageSize?: number
 }

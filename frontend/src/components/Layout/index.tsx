@@ -28,6 +28,11 @@ import {
   BookOutlined,
   BellOutlined,
   AuditOutlined,
+  FormOutlined,
+  QuestionCircleOutlined,
+  UnorderedListOutlined,
+  SendOutlined,
+  SmileOutlined,
 } from '@ant-design/icons'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAppStore } from '@/store'
@@ -279,6 +284,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       icon: <HistoryOutlined />,
       label: <Link to="/history">浏览历史</Link>,
     },
+    {
+      key: '/assessments',
+      icon: <SmileOutlined />,
+      label: <Link to="/assessments">心理测评</Link>,
+    },
     ...(isAdmin
       ? [
           {
@@ -305,6 +315,28 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 key: '/admin/users',
                 icon: <UserOutlined />,
                 label: <Link to="/admin/users">用户管理</Link>,
+              },
+            ],
+          },
+          {
+            key: 'assessment',
+            icon: <FormOutlined />,
+            label: '测评管理',
+            children: [
+              {
+                key: '/admin/questions',
+                icon: <QuestionCircleOutlined />,
+                label: <Link to="/admin/questions">题库管理</Link>,
+              },
+              {
+                key: '/admin/scales',
+                icon: <UnorderedListOutlined />,
+                label: <Link to="/admin/scales">量表管理</Link>,
+              },
+              {
+                key: '/admin/assessment-tasks',
+                icon: <SendOutlined />,
+                label: <Link to="/admin/assessment-tasks">任务发放</Link>,
               },
             ],
           },
