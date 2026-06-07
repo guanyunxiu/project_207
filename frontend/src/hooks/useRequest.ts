@@ -20,11 +20,27 @@ export function useRequest<T>(
   deps: any[] = [],
   options: UseRequestOptions<T> = {}
 ): UseRequestResult<T> {
-  const { manual = false, ready = true, onSuccess, onError } = options
+  const { manual = false, ready = true } = options
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const argsRef = useRef<any[]>([])
+  
+  const requestFnRef = useRef(requestFn)
+  const onSuccessRef = useRef(options.onSuccess)
+  const onErrorRef = useRef(options.onError)
+  
+  useEffect(() => {
+    requestFnRef.current = requestFn
+  }, [requestFn])
+  
+  useEffect(() => {
+    onSuccessRef.current = options.onSuccess
+  }, [options.onSuccess])
+  
+  useEffect(() => {
+    onErrorRef.current = options.onError
+  }, [options.onError])
 
   const run = useCallback(
     async (...args: any[]) => {
@@ -32,20 +48,20 @@ export function useRequest<T>(
       setLoading(true)
       setError(null)
       try {
-        const result = await requestFn(...args)
+        const result = await requestFnRef.current(...args)
         setData(result)
-        onSuccess?.(result)
+        onSuccessRef.current?.(result)
         return result
       } catch (err) {
         const e = err as Error
         setError(e)
-        onError?.(e)
+        onErrorRef.current?.(e)
         throw e
       } finally {
         setLoading(false)
       }
     },
-    [requestFn, onSuccess, onError]
+    []
   )
 
   const refresh = useCallback(() => {
@@ -56,7 +72,7 @@ export function useRequest<T>(
     if (!manual && ready) {
       run()
     }
-  }, [...deps, manual, ready, run])
+  }, [...deps, manual, ready])
 
   return {
     data,
