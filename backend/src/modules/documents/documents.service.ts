@@ -39,7 +39,9 @@ export class DocumentsService {
       return document.permission === DocumentPermission.PUBLIC && document.status === Status.PUBLISHED;
     }
 
-    if (user.role === Role.SUPER_ADMIN || user.role === Role.HR_ADMIN || user.role === Role.ASSESSMENT_ADMIN) {
+    const userRole = user.role as string;
+    if (userRole === Role.SUPER_ADMIN || userRole === Role.HR_ADMIN || userRole === Role.ASSESSMENT_ADMIN ||
+        userRole === 'super_admin' || userRole === 'hr_admin' || userRole === 'assessment_admin') {
       return true;
     }
 

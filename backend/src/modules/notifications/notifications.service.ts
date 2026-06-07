@@ -22,8 +22,8 @@ export class NotificationsService {
     const skip = (page - 1) * pageSize;
 
     const where: any = { userId };
-    if (isRead !== undefined) {
-      where.isRead = isRead;
+    if (isRead !== undefined && isRead !== null) {
+      where.isRead = Boolean(isRead);
     }
     if (type) {
       where.type = type;
